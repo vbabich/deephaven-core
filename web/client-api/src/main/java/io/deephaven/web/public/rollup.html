@@ -309,7 +309,7 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
               currentTable
                 .findColumn("K")
                 .filter()
-                .greaterThan(FilterValue.ofNumber(4))
+                .greaterThan(FilterValue.ofNumber(2))
             );
           }
 
@@ -330,7 +330,7 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
             currentTree
               .findColumn(config.groupingColumns[0])
               .filter()
-              .eq(FilterValue.ofString("J1"))
+              .eq(FilterValue.ofString("J2"))
           );
 
           if (
@@ -341,7 +341,7 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
               currentTree
                 .findColumn(config.aggregations["Skip"][0])
                 .filter()
-                .greaterThan(FilterValue.ofNumber(4))
+                .greaterThan(FilterValue.ofNumber(5))
             );
           }
 
