@@ -74,7 +74,7 @@
         <label for="na-operation">Non-Aggregated Column Operation</label>
         <select id="na-operation">
           <option value="First">First</option>
-          <option value="Skip">Skip</option>
+          <option value="Skip" selected>Skip</option>
         </select>
       </div>
     </div>
@@ -86,12 +86,14 @@
       for="includeNonAggregated"
       >Include Non-Aggregated Columns</label
     ><br />
-    <button id="open">Display Rollup Table</button>
+    <button id="filter-source">Apply Filter to Source</button><br />
+    <button id="open">Display Rollup Table</button><br />
+    <button id="filter-rollup">Apply Filter to Rollup</button><br />
     <div id="treetable"></div>
     <script type="module">
       import dh from "./dh-core.js";
 
-      const { CoreClient, AggregationOperation } = dh;
+      const { AggregationOperation, CoreClient, FilterValue } = dh;
 
       import { TreeGrid } from "./treegrid.js";
       var connection;
@@ -196,13 +198,15 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
         }
 
         var currentTable;
+        var numeric = [];
+        var nonNumeric = [];
 
         function displayTableDetails(table) {
           closeAll();
           currentTable = table;
           // pick out the non-numeric fields for hierarchy
-          var numeric = [];
-          var nonNumeric = [];
+          numeric = [];
+          nonNumeric = [];
           table.columns.forEach((c) => {
             switch (c.type) {
               case "int":
@@ -245,6 +249,8 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
         }
 
         var currentTree;
+        var config;
+        var treeGrid;
         document.getElementById("open").onclick = (e) => {
           if (currentTable == null) {
             console.error("Need a table selected!");
@@ -252,7 +258,7 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
           }
           closeTree();
           // collect the expected tree columns and aggregation columns, make into a config object
-          var config = {
+          config = {
             groupingColumns: [],
             aggregations: {},
           };
@@ -277,11 +283,69 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`J\` + (int)(i/10
           currentTable.rollup(config).then((treeTable) => {
             console.log("Rollup table:", treeTable, treeTable.columns);
             currentTree = treeTable;
-            var tableElt = new TreeGrid(treeTable).element;
-            treeParent.appendChild(tableElt);
+            treeGrid = new TreeGrid(treeTable);
+            treeParent.appendChild(treeGrid.element);
 
-            new TotalsTableHelper(null, treeTable, tableElt, 1);
+            new TotalsTableHelper(null, treeTable, treeGrid.element, 1);
           });
+        };
+
+        document.getElementById("filter-source").onclick = (e) => {
+          if (currentTable == null) {
+            console.error("Need a table selected!");
+            return;
+          }
+
+          // Just hardcoded filters for now
+          // TODO: update
+          const filters = [];
+
+          filters.push(
+            currentTable.findColumn("J").filter().eq(FilterValue.ofString("J1"))
+          );
+
+          if (sourceColumns.length > 0) {
+            filters.push(
+              currentTable
+                .findColumn("K")
+                .filter()
+                .greaterThan(FilterValue.ofNumber(4))
+            );
+          }
+
+          currentTable.applyFilter(filters);
+        };
+
+        document.getElementById("filter-rollup").onclick = (e) => {
+          if (currentTree == null) {
+            console.error("Need a tree table created!");
+            return;
+          }
+
+          // Just hardcoded filters for now
+          // TODO: update
+          const filters = [];
+
+          filters.push(
+            currentTree
+              .findColumn(config.groupingColumns[0])
+              .filter()
+              .eq(FilterValue.ofString("J1"))
+          );
+
+          if (
+            config.aggregations["Skip"] != null &&
+            config.aggregations["Skip"].length > 0
+          ) {
+            filters.push(
+              currentTree
+                .findColumn(config.aggregations["Skip"][0])
+                .filter()
+                .greaterThan(FilterValue.ofNumber(4))
+            );
+          }
+
+          treeGrid.updateFilters(filters);
         };
 
         function closeAll() {
