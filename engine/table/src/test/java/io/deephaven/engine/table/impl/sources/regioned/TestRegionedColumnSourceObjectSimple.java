@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -45,7 +45,7 @@ public class TestRegionedColumnSourceObjectSimple extends TstRegionedColumnSourc
     public void setUp() throws Exception {
         super.setUp();
         // noinspection unchecked
-        SUT = new RegionedColumnSourceObject.AsValues<>(String.class);
+        SUT = new RegionedColumnSourceObject.AsValues<>(manager, String.class);
         TestCase.assertEquals(String.class, SUT.getType());
     }
 

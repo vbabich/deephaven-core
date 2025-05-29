@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include "deephaven/client/client.h"
@@ -178,8 +179,6 @@ private:
 
   std::shared_ptr<TableHandleImpl>
   SelectOrUpdateHelper(std::vector<std::string> column_specs, selectOrUpdateMethod_t which_method);
-
-  void LookupHelper(const std::string &column_name, std::initializer_list<ElementTypeId::Enum> valid_types);
 
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> DefaultAggregateByDescriptor(

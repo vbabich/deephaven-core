@@ -1,9 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.server.runner.GrpcServer;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 
+import javax.inject.Provider;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +28,8 @@ public abstract class DeephavenServerTestBase {
         GrpcServer server();
 
         ExecutionContext executionContext();
+
+        Provider<ScriptSession> scriptSessionProvider();
     }
 
     protected TestComponent component;
@@ -54,6 +59,7 @@ public abstract class DeephavenServerTestBase {
 
     @AfterEach
     void tearDown() throws InterruptedException {
+        component.scriptSessionProvider().get().cleanup();
         server.stopWithTimeout(10, TimeUnit.SECONDS);
         server.join();
         executionContext.close();

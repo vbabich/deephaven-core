@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
@@ -55,7 +55,7 @@ public class AggregationAdapter {
         Singleton.INSTANCE.adapters().validate(aggregation);
     }
 
-    private static io.deephaven.api.Selectable adapt(Selectable selectable) {
+    public static io.deephaven.api.Selectable adapt(Selectable selectable) {
         switch (selectable.getTypeCase()) {
             case RAW:
                 return io.deephaven.api.Selectable.parse(selectable.getRaw());

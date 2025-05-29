@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include <iostream>
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
 #include "deephaven/dhcore/utility/utility.h"
+
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 TEST_CASE("Script session error", "[script]") {
@@ -16,16 +18,6 @@ TEST_CASE("Script session error", "[script]") {
 }
 
 TEST_CASE("Script execution", "[script]") {
-  std::vector<int32_t> int_data;
-  std::vector<int64_t> long_data;
-
-  const int start_value = -8;
-  const int end_value = 8;
-  for (auto i = start_value; i != end_value; ++i) {
-    int_data.push_back(i);
-    long_data.push_back(i * 100);
-  }
-
   auto client = TableMakerForTests::CreateClient();
   auto thm = client.GetManager();
 
@@ -39,10 +31,19 @@ mytable = empty_table(16).update(["intData = (int)(ii - 8)", "longData = (long)(
 
   std::cout << t.Stream(true) << '\n';
 
-  CompareTable(
-      t,
-      "intData", int_data,
-      "longData", long_data
-  );
+  std::vector<int32_t> int_data;
+  std::vector<int64_t> long_data;
+
+  const int start_value = -8;
+  const int end_value = 8;
+  for (auto i = start_value; i != end_value; ++i) {
+    int_data.push_back(i);
+    long_data.push_back(i * 100);
+  }
+
+  TableMaker expected;
+  expected.AddColumn("intData", int_data);
+  expected.AddColumn("longData", long_data);
+  TableComparerForTests::Compare(expected, t);
 }
 }  // namespace deephaven::client::tests

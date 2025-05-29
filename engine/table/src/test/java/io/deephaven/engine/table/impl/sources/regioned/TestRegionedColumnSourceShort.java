@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestRegionedColumnSourceChar and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
@@ -46,7 +46,7 @@ public class TestRegionedColumnSourceShort extends
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceShort.AsValues();
+        SUT = new RegionedColumnSourceShort.AsValues(manager);
         assertEquals(short.class, SUT.getType());
     }
 

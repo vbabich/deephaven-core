@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -21,9 +21,11 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         extends RegionedColumnSourceArray<Character, ATTR, ColumnRegionChar<ATTR>>
         implements ColumnSourceGetDefaults.ForChar /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceChar(@NotNull final ColumnRegionChar<ATTR> nullRegion,
+    RegionedColumnSourceChar(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionChar<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
-        super(nullRegion, char.class, makeDeferred);
+        super(manager, nullRegion, char.class, makeDeferred);
     }
 
     @Override
@@ -47,15 +49,15 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceChar<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceChar<Values> {
-
-        Partitioning() {
-            super(ColumnRegionChar.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionChar.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

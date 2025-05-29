@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -17,12 +17,14 @@ final class RegionedColumnSourceBoolean
         extends RegionedColumnSourceReferencing<Boolean, Values, Byte, ColumnRegionByte<Values>>
         implements ColumnSourceGetDefaults.ForBoolean {
 
-    public RegionedColumnSourceBoolean() {
-        this(new RegionedColumnSourceByte.AsValues());
+    public RegionedColumnSourceBoolean(@NotNull final RegionedColumnSourceManager manager) {
+        this(manager, new RegionedColumnSourceByte.AsValues(manager));
     }
 
-    public RegionedColumnSourceBoolean(@NotNull final RegionedColumnSourceByte<Values> inner) {
-        super(ColumnRegionByte.createNull(PARAMETERS.regionMask), Boolean.class, inner);
+    public RegionedColumnSourceBoolean(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final RegionedColumnSourceByte<Values> inner) {
+        super(manager, ColumnRegionByte.createNull(PARAMETERS.regionMask), Boolean.class, inner);
     }
 
     @Override

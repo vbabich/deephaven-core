@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -22,7 +22,7 @@ public abstract class InstrumentedUpdateSource implements Runnable {
             @Nullable final String description) {
         this.updateSourceRegistrar = Objects.requireNonNull(updateSourceRegistrar);
         this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(
-                updateSourceRegistrar.getUpdateGraph(), description);
+                updateSourceRegistrar.getUpdateGraph(), description, null);
     }
 
     @Override
@@ -45,4 +45,9 @@ public abstract class InstrumentedUpdateSource implements Runnable {
     protected abstract void instrumentedRefresh();
 
     protected abstract void onRefreshError(Exception error);
+
+    @Nullable
+    public PerformanceEntry getEntry() {
+        return entry;
+    }
 }

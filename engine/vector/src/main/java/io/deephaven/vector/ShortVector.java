@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -9,6 +9,7 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -55,7 +56,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
 
     @Override
     @FinalDefault
-    default CloseablePrimitiveIteratorOfShort iterator() {
+    default ValueIteratorOfShort iterator() {
         return iterator(0, size());
     }
 
@@ -67,9 +68,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseablePrimitiveIteratorOfShort() {
+        return new ValueIteratorOfShort() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -81,6 +82,11 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }

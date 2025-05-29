@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.sql;
 
@@ -15,6 +15,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterSerial;
 import io.deephaven.api.literal.Literal;
 
 import java.util.ArrayList;
@@ -77,6 +78,11 @@ enum FilterSimplifier implements Visitor<Filter> {
     @Override
     public Filter visit(FilterPattern pattern) {
         return pattern;
+    }
+
+    @Override
+    public Filter visit(FilterSerial serial) {
+        return of(serial.filter()).withSerial();
     }
 
     @Override

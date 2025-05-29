@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
 
-using deephaven::client::TableHandleManager;
-using deephaven::client::TableHandle;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 TEST_CASE("Last By", "[lastby]") {
@@ -21,11 +20,12 @@ TEST_CASE("Last By", "[lastby]") {
   std::vector<double> close_data = {53.8, 88.5, 38.7, 453, 26.7, 544.9};
 
   INFO(lb.Stream(true));
-  CompareTable(
-      lb,
-      "Ticker", ticker_data,
-      "Open", open_data,
-      "Close", close_data
-  );
+
+  TableMaker expected;
+  expected.AddColumn<std::string>("Ticker", {"XRX", "XYZZY", "IBM", "GME", "AAPL", "ZNGA"});
+  expected.AddColumn<double>("Open", {50.5, 92.3, 40.1, 681.43, 31.5, 685.3});
+  expected.AddColumn<double>("Close", {53.8, 88.5, 38.7, 453, 26.7, 544.9});
+  TableComparerForTests::Compare(expected, lb);
+
 }
 }  // namespace deephaven::client::tests

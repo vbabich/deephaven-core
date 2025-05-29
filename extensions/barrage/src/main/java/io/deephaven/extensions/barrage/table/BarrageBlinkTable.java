@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.table;
 
@@ -40,6 +40,7 @@ public class BarrageBlinkTable extends BarrageTable {
     private long numRowsLastRefresh = 0;
 
     protected BarrageBlinkTable(
+            @Nullable final String channelName,
             final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
@@ -47,7 +48,8 @@ public class BarrageBlinkTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        super(channelName, registrar, notificationQueue, executorService, columns, writableSources, attributes,
+                vpCallback);
         setFlat();
     }
 

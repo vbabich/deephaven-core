@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -257,6 +257,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of parquet row group metadata during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetRowGroupMetadata",
+                    false);
+
+    /**
+     * Disable the usage of local data file indexes during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_DATA_INDEX =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDataIndex", false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =
@@ -285,6 +298,14 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static long MINIMUM_PARALLEL_SNAPSHOT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSnapshotRows", 1L << 20);
+
+    /**
+     * If set to true, then the default behavior of condition filters is to be stateless. Stateless filters are allowed
+     * to be processed in parallel by the engine.
+     */
+    public static boolean STATELESS_FILTERS_BY_DEFAULT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+
 
     @VisibleForTesting
     public static boolean USE_CHUNKED_CROSS_JOIN =
@@ -768,7 +789,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                             + ")",
                     sizeForInstrumentation(),
-                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
+                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, NaturalJoinType.EXACTLY_ONE_MATCH));
         }
     }
 
@@ -2263,29 +2284,38 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table naturalJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
         return naturalJoinImpl(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
+                MatchPair.fromAddition(columnsToAdd),
+                joinType);
     }
 
-    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    private Table naturalJoinImpl(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         final UpdateGraph updateGraph = getUpdateGraph(rightTable);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget(
                     "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
-                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
+                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, joinType));
         }
     }
 
-    private Table naturalJoinInternal(final Table rightTable, final MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch) {
+    private Table naturalJoinInternal(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         columnsToAdd = createColumnsToAddIfMissing(rightTable, columnsToMatch, columnsToAdd);
 
         final QueryTable rightTableCoalesced = (QueryTable) rightTable.coalesce();
 
-        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, exactMatch);
+        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
     private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
@@ -2393,7 +2423,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
-                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
+                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
+                            NaturalJoinType.ERROR_ON_DUPLICATE);
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(String[]::new));
 
@@ -3575,10 +3606,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     @Override
     public QueryTable copy() {
-        final UpdateGraph updateGraph = getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return copy(StandardOptions.COPY_ALL);
-        }
+        return copy(StandardOptions.COPY_ALL);
     }
 
     public QueryTable copy(Predicate<String> shouldCopy) {

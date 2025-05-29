@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.tablelogger;
 
@@ -32,6 +32,8 @@ public class EngineTableLoggers {
 
         UpdatePerformanceLogLogger updatePerformanceLogLogger();
 
+        UpdatePerformanceAncestorLogger updatePerformanceAncestorLogger();
+
         enum Noop implements Factory {
             INSTANCE;
 
@@ -63,6 +65,11 @@ public class EngineTableLoggers {
             @Override
             public UpdatePerformanceLogLogger updatePerformanceLogLogger() {
                 return UpdatePerformanceLogLogger.Noop.INSTANCE;
+            }
+
+            @Override
+            public UpdatePerformanceAncestorLogger updatePerformanceAncestorLogger() {
+                return UpdatePerformanceAncestorLogger.Noop.INSTANCE;
             }
         }
     }

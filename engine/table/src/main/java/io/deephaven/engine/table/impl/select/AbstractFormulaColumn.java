@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -256,15 +256,18 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,
             QueryScopeParam<?>... params) {
+        final FormulaFactory formulaFactory;
         try {
             // the future must already be completed or else it is an error
-            formula = formulaFactoryFuture.get(0, TimeUnit.SECONDS).createFormula(
-                    StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap, columnsToData, params);
+            formulaFactory = formulaFactoryFuture.get(0, TimeUnit.SECONDS);
         } catch (InterruptedException | TimeoutException e) {
-            throw new IllegalStateException("Formula factory not already compiled!");
+            throw new IllegalStateException("Formula factory not already compiled!", e);
         } catch (ExecutionException e) {
-            throw new UncheckedDeephavenException("Error creating formula for " + columnName, e.getCause());
+            throw new UncheckedDeephavenException("Error creating formula factory for " + columnName, e.getCause());
         }
+        formula = formulaFactory.createFormula(StringEscapeUtils.escapeJava(columnName), rowSet, initLazyMap,
+                columnsToData, params);
+
         return formula;
     }
 

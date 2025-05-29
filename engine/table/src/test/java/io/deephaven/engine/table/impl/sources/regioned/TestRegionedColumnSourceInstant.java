@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -60,7 +60,7 @@ public class TestRegionedColumnSourceInstant
     public void setUp() throws Exception {
         super.setUp();
 
-        SUT = new RegionedColumnSourceInstant();
+        SUT = new RegionedColumnSourceInstant(manager);
         assertEquals(Instant.class, SUT.getType());
         SUT_AS_LONG = SUT.reinterpret(long.class);
         assertEquals(long.class, SUT_AS_LONG.getType());

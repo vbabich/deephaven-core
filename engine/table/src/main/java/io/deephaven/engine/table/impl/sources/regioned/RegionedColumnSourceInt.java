@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
@@ -25,9 +25,11 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
         extends RegionedColumnSourceArray<Integer, ATTR, ColumnRegionInt<ATTR>>
         implements ColumnSourceGetDefaults.ForInt /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceInt(@NotNull final ColumnRegionInt<ATTR> nullRegion,
+    RegionedColumnSourceInt(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionInt<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionInt<ATTR>> makeDeferred) {
-        super(nullRegion, int.class, makeDeferred);
+        super(manager, nullRegion, int.class, makeDeferred);
     }
 
     @Override
@@ -51,15 +53,15 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceInt<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceInt<Values> {
-
-        Partitioning() {
-            super(ColumnRegionInt.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionInt.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

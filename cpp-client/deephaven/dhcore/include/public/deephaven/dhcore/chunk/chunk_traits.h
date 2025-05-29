@@ -1,10 +1,17 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <cstdint>
 #include "deephaven/dhcore/chunk/chunk.h"
+
+namespace deephaven::dhcore::container {
+/**
+ * Forward declaration
+ */
+class ContainerBase;
+}  // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore::chunk {
 template<typename T>
@@ -73,5 +80,10 @@ struct TypeToChunk<deephaven::dhcore::LocalDate> {
 template<>
 struct TypeToChunk<deephaven::dhcore::LocalTime> {
   using type_t = deephaven::dhcore::chunk::LocalTimeChunk;
+};
+
+template<>
+struct TypeToChunk<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
+  using type_t = deephaven::dhcore::chunk::ContainerBaseChunk;
 };
 }  // namespace deephaven::client::chunk

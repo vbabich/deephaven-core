@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
@@ -62,7 +62,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.get(idAggregationRow);
+        return sourceRowKeyColumnSource.getLong(idAggregationRow);
     }
 
     /**
@@ -77,7 +77,7 @@ final class TreeSourceRowLookup extends LivenessArtifact implements Notification
         if (idAggregationRow == rowLookup.noEntryValue()) {
             return noEntryValue();
         }
-        return sourceRowKeyColumnSource.getPrev(idAggregationRow);
+        return sourceRowKeyColumnSource.getPrevLong(idAggregationRow);
     }
 
     @Override

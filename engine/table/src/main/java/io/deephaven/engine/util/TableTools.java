@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -670,6 +670,11 @@ public class TableTools {
         return new QueryTable(RowSetFactory.flat(size).toTracking(), Collections.emptyMap()) {
             {
                 setFlat();
+            }
+
+            @Override
+            public String getDescription() {
+                return "emptyTable(" + size + ")";
             }
         };
     }

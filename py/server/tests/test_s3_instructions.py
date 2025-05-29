@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import jpy
 import tempfile
@@ -59,6 +59,10 @@ class S3InstructionTest(BaseTestCase):
     def test_set_read_timeout(self):
         s3_instructions = s3.S3Instructions(read_timeout="PT5s")
         self.assertEqual(s3_instructions.j_object.readTimeout().toSeconds(), 5)
+
+    def test_set_write_timeout(self):
+        s3_instructions = s3.S3Instructions(write_timeout="PT5s")
+        self.assertEqual(s3_instructions.j_object.writeTimeout().toSeconds(), 5)
 
     def test_set_endpoint_override(self):
         s3_instructions = s3.S3Instructions(endpoint_override="http://localhost:9000")

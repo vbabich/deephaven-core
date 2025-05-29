@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -118,18 +118,18 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(partitioningColumnSource));
                 allowing(partitioningColumnSource).getType();
                 will(returnValue(partitioningColumnDefinition.getDataType()));
                 allowing(partitioningColumnSource).getComponentType();
                 will(returnValue(partitioningColumnDefinition.getComponentType()));
-                oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(groupingColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(groupingColumnSource));
-                oneOf(componentFactory).createRegionedColumnSource(with(same(normalColumnDefinition)),
-                        with(ColumnToCodecMappings.EMPTY));
+                oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
+                        with(same(normalColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(normalColumnSource));
             }
         });

@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
-#include <type_traits>
-
+#include <cstdint>
+#include <memory>
+#include <string>
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::dhcore::column {
 namespace internal {
@@ -23,6 +25,7 @@ public:
   static const char kDateTimeName[];
   static const char kLocalDateName[];
   static const char kLocalTimeName[];
+  static const char kContainerBaseName[];
 };
 
 struct ElementTypeVisitor : public ColumnSourceVisitor {
@@ -72,6 +75,10 @@ struct ElementTypeVisitor : public ColumnSourceVisitor {
 
   void Visit(const LocalTimeColumnSource & /*source*/) final {
     value_ = HumanReadableTypeNames::kLocalTimeName;
+  }
+
+  void Visit(const ContainerBaseColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kContainerBaseName;
   }
 
   const char *value_ = nullptr;
@@ -150,4 +157,8 @@ struct HumanReadableStaticTypeName<deephaven::dhcore::LocalTime> {
   static const char *GetName() { return internal::HumanReadableTypeNames::kLocalTimeName; }
 };
 
+template<>
+struct HumanReadableStaticTypeName<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
+  static const char *GetName() { return internal::HumanReadableTypeNames::kContainerBaseName; }
+};
 }  // namespace deephaven::client::column

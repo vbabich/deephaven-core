@@ -1,10 +1,13 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/clienttable/client_table.h"

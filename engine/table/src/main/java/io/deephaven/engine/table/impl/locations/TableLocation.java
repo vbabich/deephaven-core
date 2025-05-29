@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations;
 
@@ -9,6 +9,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.PushdownFilterMatcher;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
@@ -22,7 +23,8 @@ import java.util.List;
  * location allows access to columns, size, and possibly other metadata for a single partition that may be included in a
  * source table.
  */
-public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent {
+public interface TableLocation
+        extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent, PushdownFilterMatcher {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.
@@ -112,6 +114,14 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     boolean hasDataIndex(@NotNull String... columns);
 
     /**
+     * Check if this TableLocation has a data index for the specified columns already loaded in memory.
+     *
+     * @param columns The set of columns to check for
+     * @return Whether the TableLocation has a cached index for the specified columns
+     */
+    boolean hasCachedDataIndex(@NotNull String... columns);
+
+    /**
      * Get the data index table for the specified set of columns. Note that the order of columns does not matter here.
      *
      * @param columns The key columns for the index
@@ -127,7 +137,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
 
     /**
      * @param name The column name
-     * @return The ColumnLocation for the defined column under this table location
+     * @return The ColumnLocation for the defined column under this table location. The exact same ColumnLocation object
+     *         should be returned for the same column name.
      */
     @NotNull
     ColumnLocation getColumnLocation(@NotNull CharSequence name);

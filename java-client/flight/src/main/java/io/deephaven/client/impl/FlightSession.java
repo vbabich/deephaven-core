@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -100,6 +100,17 @@ public class FlightSession implements AutoCloseable {
      */
     public FlightClient.ExchangeReaderWriter startExchange(FlightDescriptor descriptor, CallOption... options) {
         return client.doExchange(descriptor, options);
+    }
+
+    /**
+     * Creates a new server side DoExchange session.
+     *
+     * @param hasPathId an object that has a {@link PathId}
+     * @param options the GRPC otions to apply to this call
+     * @return the bi-directional ReaderWriter object
+     */
+    public FlightClient.ExchangeReaderWriter startExchange(final HasPathId hasPathId, final CallOption... options) {
+        return startExchange(FlightClientHelper.descriptor(hasPathId), options);
     }
 
     /**

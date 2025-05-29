@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -12,8 +12,8 @@ import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
 import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -23,6 +23,7 @@ import javax.inject.Singleton;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -37,6 +38,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             return JettyConfig.builder()
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .allowedHttpMethods(Set.of("GET", "POST"))
                     .build();
         }
     }

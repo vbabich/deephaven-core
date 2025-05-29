@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -12,7 +12,7 @@ import org.apache.iceberg.Table;
  */
 class SchemaProviderInternal {
 
-    interface SchemaProviderImpl {
+    interface SchemaProviderImpl extends SchemaProvider {
         /**
          * Returns the schema for the given table based on this {@link SchemaProvider}.
          */
@@ -20,14 +20,16 @@ class SchemaProviderInternal {
     }
 
     // Implementations of SchemaProvider
-    static class CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSchemaProvider implements SchemaProviderImpl {
+        CURRENT_SCHEMA;
+
         @Override
         public Schema getSchema(final Table table) {
             return getCurrentSchema(table);
         }
     }
 
-    static class IdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class IdSchemaProvider implements SchemaProviderImpl {
         private final int schemaId;
 
         IdSchemaProvider(final int schemaId) {
@@ -40,10 +42,15 @@ class SchemaProviderInternal {
         }
     }
 
-    static class DirectSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    static class DirectSchemaProvider implements SchemaProviderImpl {
         private final Schema schema;
 
         DirectSchemaProvider(final Schema schema) {
+            if (schema.schemaId() != 0) {
+                // It's unfortunate that org.apache.iceberg.Schema.DEFAULT_SCHEMA_ID overlaps with a real schema id
+                throw new IllegalArgumentException(
+                        "Direct schemas should not set a schema id; use fromSchemaId instead");
+            }
             this.schema = schema;
         }
 
@@ -53,10 +60,10 @@ class SchemaProviderInternal {
         }
     }
 
-    static class SnapshotIdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
-        private final int snapshotId;
+    static class SnapshotIdSchemaProvider implements SchemaProviderImpl {
+        private final long snapshotId;
 
-        SnapshotIdSchemaProvider(final int snapshotId) {
+        SnapshotIdSchemaProvider(final long snapshotId) {
             this.snapshotId = snapshotId;
         }
 
@@ -66,7 +73,9 @@ class SchemaProviderInternal {
         }
     }
 
-    static class CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
+    enum CurrentSnapshotSchemaProvider implements SchemaProviderImpl {
+        CURRENT_SNAPSHOT;
+
         @Override
         public Schema getSchema(final Table table) {
             return getSchemaForCurrentSnapshot(table);
@@ -88,7 +97,7 @@ class SchemaProviderInternal {
         return schema;
     }
 
-    private static Schema getSchemaForSnapshotId(final Table table, final int snapshotId) {
+    private static Schema getSchemaForSnapshotId(final Table table, final long snapshotId) {
         final Snapshot snapshot = table.snapshot(snapshotId);
         if (snapshot == null) {
             throw new IllegalArgumentException("Snapshot with ID " + snapshotId + " not found for table " +

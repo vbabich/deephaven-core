@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
@@ -70,7 +70,10 @@ TEST_CASE("UpdateBy: SimpleCumSum", "[update_by]") {
   auto source = tm.EmptyTable(10).Update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i");
   auto result = source.UpdateBy({cumSum({"SumX = X"})}, {"Letter"});
   auto filtered = result.Select("SumX");
-  CompareTable(filtered, "SumX", std::vector<int64_t>{0, 1, 2, 4, 6, 9, 12, 16, 20, 25});
+
+  TableMaker expected;
+  expected.AddColumn<int64_t>("SumX", {0, 1, 2, 4, 6, 9, 12, 16, 20, 25});
+  TableComparerForTests::Compare(expected, filtered);
 }
 
 TEST_CASE("UpdateBy: SimpleOps", "[update_by]") {

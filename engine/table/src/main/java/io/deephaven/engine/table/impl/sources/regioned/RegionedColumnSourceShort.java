@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
@@ -25,9 +25,11 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         extends RegionedColumnSourceArray<Short, ATTR, ColumnRegionShort<ATTR>>
         implements ColumnSourceGetDefaults.ForShort /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceShort(@NotNull final ColumnRegionShort<ATTR> nullRegion,
+    RegionedColumnSourceShort(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionShort<ATTR> nullRegion,
             @NotNull final MakeDeferred<ATTR, ColumnRegionShort<ATTR>> makeDeferred) {
-        super(nullRegion, short.class, makeDeferred);
+        super(manager, nullRegion, short.class, makeDeferred);
     }
 
     @Override
@@ -51,15 +53,15 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceShort<Values> {
-
-        Partitioning() {
-            super(ColumnRegionShort.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionShort.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }

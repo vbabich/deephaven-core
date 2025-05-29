@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3.testlib;
 
@@ -16,7 +16,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.net.URI;
-import java.util.Map;
 
 public final class SingletonContainers {
 
@@ -47,7 +46,7 @@ public final class SingletonContainers {
 
         public static S3AsyncClient s3AsyncClient() {
             return S3AsyncClient
-                    .crtBuilder()
+                    .builder()
                     .endpointOverride(LOCALSTACK_S3.getEndpoint())
                     .region(Region.of(LOCALSTACK_S3.getRegion()))
                     .credentialsProvider(StaticCredentialsProvider.create(
@@ -97,7 +96,7 @@ public final class SingletonContainers {
 
         public static S3AsyncClient s3AsyncClient() {
             return S3AsyncClient
-                    .crtBuilder()
+                    .builder()
                     .endpointOverride(URI.create(MINIO.getS3URL()))
                     .region(Region.AWS_GLOBAL)
                     .credentialsProvider(StaticCredentialsProvider.create(

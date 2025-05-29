@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 
@@ -7,6 +7,7 @@
 #include "deephaven/dhcore/column/column_source.h"
 
 using deephaven::dhcore::column::CharColumnSource;
+using deephaven::dhcore::column::ContainerBaseColumnSource;
 using deephaven::dhcore::column::ColumnSourceVisitor;
 using deephaven::dhcore::column::DateTimeColumnSource;
 using deephaven::dhcore::column::DoubleColumnSource;
@@ -70,6 +71,10 @@ struct Visitor final : ColumnSourceVisitor {
 
   void Visit(const LocalTimeColumnSource &/*source*/) final {
     result_ = LocalTimeChunk::Create(chunk_size_);
+  }
+
+  void Visit(const ContainerBaseColumnSource &/*source*/) final {
+    result_ = ContainerBaseChunk::Create(chunk_size_);
   }
 
   size_t chunk_size_;

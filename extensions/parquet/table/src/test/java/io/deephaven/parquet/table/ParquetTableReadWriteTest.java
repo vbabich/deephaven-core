@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -23,6 +23,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
@@ -33,6 +34,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -86,6 +88,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -104,6 +107,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -138,6 +142,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -1549,6 +1554,87 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
         assertTableEquals(expected.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
                 readTable(commonMetadata.getPath()).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
+    }
+
+    @Test
+    public void testWritingPartitionedDatasetWithIndexOnPartitioningColumn() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table inputData = TableTools.emptyTable(10)
+                .update("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "PC2 = (int)(ii%3)",
+                        "I = ii");
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithIndexOnPC");
+        final ParquetInstructions instructionsWithIndexOnPC = ParquetInstructions.builder()
+                .setTableDefinition(definition)
+                .addIndexColumns("PC1") // Adding index on partitioning column
+                .build();
+
+        try {
+            writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+            fail("Expected exception when adding index on partitioning column");
+        } catch (final IllegalArgumentException exception) {
+            assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
+        }
+        try {
+            writeKeyValuePartitionedTable(
+                    inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), instructionsWithIndexOnPC);
+            fail("Expected exception when adding index on partitioning column");
+        } catch (final IllegalArgumentException exception) {
+            assertTrue(exception.getMessage().contains("Cannot add index on partitioning column"));
+        }
+
+        // Add a data index on a partitioning column
+        DataIndexer.getOrCreateDataIndex(inputData, "PC1");
+        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), ParquetInstructions.builder()
+                .setTableDefinition(definition)
+                .setBaseNameForPartitionedParquetData("data")
+                .build());
+
+        // Make sure we didn't write the index
+        final File parquetDataDir = new File(parentDir, "PC1=1/PC2=1");
+        verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"}, null);
+
+        final Table fromDisk = readTable(parentDir.getPath());
+
+        // Make sure an index is present on the partitioning column, which will be the partitioning index
+        verifyIndexingInfoExists(fromDisk, "PC1");
+        verifyIndexingInfoExists(fromDisk, "PC2");
+
+        // Make sure the data is read correctly
+        assertEquals(definition, fromDisk.getDefinition());
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+    }
+
+    @Test
+    public void testReadingPartitionedDatasetWithIndexOnPartitioningColumn() {
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table expectedValues = TableTools.emptyTable(10)
+                .update("PC1 = (ii%2==0)? null : (int)(ii%2)",
+                        "PC2 = (int)(ii%3)",
+                        "I = ii");
+        final String parentDir =
+                ParquetTableReadWriteTest.class.getResource("/referencePartitionedDataWithIndexOnPC").getFile();
+        final File parquetDataDir = new File(parentDir, "PC1=1/PC2=1");
+        final String pc1IndexFilePath = ".dh_metadata/indexes/PC1/index_PC1_data.parquet";
+        final String pc2IndexFilePath = ".dh_metadata/indexes/PC2/index_PC2_data.parquet";
+        verifyFilesInDir(parquetDataDir, new String[] {"data.parquet"},
+                Map.of("PC1", new String[] {pc1IndexFilePath},
+                        "PC2", new String[] {pc2IndexFilePath}));
+
+        final Table fromDisk = readTable(parentDir);
+        // Make sure an index is present on the partitioning column, which will be the partitioning index
+        verifyIndexingInfoExists(fromDisk, "PC1");
+        verifyIndexingInfoExists(fromDisk, "PC2");
+
+        // Make sure the data is read correctly
+        assertEquals(expectedDefinition, fromDisk.getDefinition());
+        assertTableEquals(expectedValues.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
     }
 
     @Test
@@ -3653,6 +3739,111 @@ public final class ParquetTableReadWriteTest {
         // Each byte array is of half the page size. So we exceed page size on hitting 3 byteArrays.
         // Therefore, we should have total 2 pages containing 2, 1 rows respectively.
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
+    }
+
+    private static void verifyMakeHandleException(final Runnable throwingRunnable) {
+        try {
+            throwingRunnable.run();
+            fail("Expected UncheckedIOException");
+        } catch (final UncheckedIOException e) {
+            assertTrue(e.getMessage().contains("makeHandle encountered exception"));
+        }
+    }
+
+    private static void makeNewTableLocationAndVerifyNoException(
+            final Consumer<ParquetTableLocation> parquetTableLocationConsumer) {
+        final File dest = new File(rootFile, "real.parquet");
+        final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        DataIndexer.getOrCreateDataIndex(table, "A");
+        writeTable(table, dest.getPath());
+
+        final ParquetTableLocationKey newTableLocationKey =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation newTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
+
+        // The following operations should not throw exceptions
+        parquetTableLocationConsumer.accept(newTableLocation);
+        dest.delete();
+    }
+
+    @Test
+    public void testTableLocationReading() {
+        // Make a new ParquetTableLocation for a non-existent parquet file
+        final File nonExistentParquetFile = new File(rootFile, "non-existent.parquet");
+        assertFalse(nonExistentParquetFile.exists());
+        final ParquetTableLocationKey nonExistentTableLocationKey =
+                new ParquetTableLocationKey(nonExistentParquetFile.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation nonExistentTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), nonExistentTableLocationKey, EMPTY);
+
+        // Ensure operations don't touch the file or throw exceptions
+        assertEquals(nonExistentTableLocation.getTableKey(), StandaloneTableKey.getInstance());
+        assertEquals(nonExistentTableLocation.getKey(), nonExistentTableLocationKey);
+        assertNotNull(nonExistentTableLocation.toString());
+        assertNotNull(nonExistentTableLocation.asLivenessReferent());
+        assertNotNull(nonExistentTableLocation.getStateLock());
+        nonExistentTableLocation.refresh();
+
+        // Verify that we can get a column location for a non-existent column
+        final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
+        assertNotNull(nonExistentColumnLocation);
+        assertEquals("A", nonExistentColumnLocation.getName());
+        assertEquals(nonExistentTableLocation, nonExistentColumnLocation.getTableLocation());
+        assertNotNull(nonExistentColumnLocation.toString());
+        assertNotNull(nonExistentColumnLocation.getImplementationName());
+
+        // Verify that all the following operations will fail when the file does not exist and pass when it does
+        // APIs from TableLocation
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndexColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getDataIndexColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
+
+        verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);
+
+        // Assuming here there will be an index on column "A"
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.getDataIndex("A"));
+
+        verifyMakeHandleException(nonExistentTableLocation::loadDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.loadDataIndex("A"));
+
+        // APIs from TableLocationState
+        verifyMakeHandleException(nonExistentTableLocation::getRowSet);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getRowSet);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSize);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSize);
+
+        verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getLastModifiedTimeMillis);
+
+        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
+
+        // APIs from ColumnLocation
+        verifyMakeHandleException(nonExistentColumnLocation::exists);
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
+                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
+                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
+                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
+                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
+                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
+                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
+                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
+                ColumnDefinition.fromGenericType("A", String.class, String.class)));
     }
 
     @Test

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.runner;
 
@@ -12,6 +12,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -175,6 +176,8 @@ public abstract class DeephavenApiServerTestBase {
 
     @After
     public void tearDown() throws Exception {
+        scriptSessionProvider.get().cleanup();
+
         if (scopeCloseable != null) {
             scopeCloseable.close();
             scopeCloseable = null;

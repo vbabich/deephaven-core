@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/tests/test_util.h"
+
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven::client::tests {
 
@@ -14,13 +16,10 @@ TEST_CASE("Drop some columns", "[adddrop]") {
   auto t2 = t.DropColumns(cn.ImportDate(), cn.Ticker(), cn.Open(), cn.Close());
   std::cout << t2.Stream(true) << '\n';
 
-  std::vector<int64_t> vol_data = {100000, 250000, 19000};
-  std::vector<int64_t> ii_data = {5, 6, 7};
+  TableMaker expected;
+  expected.AddColumn<int64_t>("Volume", {100000, 250000, 19000});
+  expected.AddColumn<int64_t>("II", {5, 6, 7});
 
-  CompareTable(
-      t2,
-      "Volume", vol_data,
-      "II", ii_data
-  );
+  TableComparerForTests::Compare(expected, t2);
 }
 }  // namespace deephaven::client::tests

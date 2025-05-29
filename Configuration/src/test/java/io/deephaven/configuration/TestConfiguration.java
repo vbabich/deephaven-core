@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.configuration;
 
@@ -455,13 +455,13 @@ public class TestConfiguration extends TestCase {
                             +
                             "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
                     history.get(0).fileName);
-        } else if ("23".equals(javaVersion)) {
+        } else if ("24".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +
-                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n"
+                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
                             +
-                            "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
+                            "java.base/java.lang.reflect.Method.invoke(Method.java:565)\n",
                     history.get(0).fileName);
         } else {
             fail("Must add specific test for java version " + javaVersion);
@@ -559,5 +559,47 @@ public class TestConfiguration extends TestCase {
         assertNull(c1.getStringWithDefault("test2", null));
         assertNull(c2.getStringWithDefault("test2", null));
         assertEquals("true", c3.getProperty("test2"));
+    }
+
+    public void testNamedConfigurationSimple() {
+        System.setProperty(FILENAME_PROPERTY, "resources/lib-tests.prop");
+        System.clearProperty("Configuration.Test1.rootFile");
+        System.setProperty("Test1.rootFile", "resources/test1.prop");
+
+        Configuration.reset();
+        Configuration dc = Configuration.getInstance();
+        Configuration c1 = Configuration.getNamed("Test1");
+
+        assertEquals("cache", dc.getProperty("cacheDir"));
+        assertNull(c1.getStringWithDefault("cacheDir", null));
+
+        assertNull(dc.getStringWithDefault("test1", null));
+        assertEquals("true", c1.getProperty("test1"));
+
+        assertNull(dc.getStringWithDefault("test3", null));
+        // test1 imports test3, so expected.
+        assertEquals("true", c1.getProperty("test3"));
+
+        // Make sure we can't try to load a Configuration with a null name, or `Configuration`
+        try {
+            final Configuration c = Configuration.getNamed(null);
+            fail("Should have rejected a null name");
+        } catch (ConfigurationException ignored) {
+
+        }
+
+        try {
+            final Configuration c = Configuration.getNamed("Configuration");
+            fail("Should have rejected the name `Configuration`");
+        } catch (ConfigurationException ignored) {
+
+        }
+
+        try {
+            final Configuration c = Configuration.getNamed("NonExistent");
+            fail("Should have rejected a named config that doesnt exist");
+        } catch (ConfigurationException ignored) {
+
+        }
     }
 }

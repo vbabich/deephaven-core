@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import os
@@ -809,6 +809,7 @@ class ParquetTestCase(BaseTestCase):
         expected = new_table([long_col("uint8Col", [255, 2, 0])])
         self.assert_table_equals(table_from_disk, expected)
 
+    @unittest.skip("DH-19432: Parquet v2 page reading does not check is_compressed")
     def test_v2_pages(self):
         def test_v2_pages_helper(dh_table):
             write(dh_table, "data_from_dh.parquet")

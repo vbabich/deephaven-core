@@ -1,16 +1,18 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
-#include <map>
+#include <cstddef>
 #include <memory>
 #include <optional>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
-#include "deephaven/third_party/fmt/format.h"
-#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::clienttable {
 /**

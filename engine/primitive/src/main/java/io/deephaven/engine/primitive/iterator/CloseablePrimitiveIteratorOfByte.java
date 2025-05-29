@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CloseablePrimitiveIteratorOfChar and run "./gradlew replicatePrimitiveInterfaces" to regenerate
@@ -71,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfByte extends CloseablePrimitiveIter
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfByte.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfByte.this.nextByte());
             }
 
             @Override

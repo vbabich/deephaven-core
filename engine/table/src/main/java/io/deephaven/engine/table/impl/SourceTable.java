@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -28,11 +29,14 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 /**
  * Basic uncoalesced table that only adds keys.
  */
-public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE> {
+public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE>
+        implements HasRefreshingSource {
 
     /**
      * Component factory. Mostly held for redefinitions.
@@ -145,7 +149,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationsInitialized) {
                 return;
             }
-            QueryPerformanceRecorder.withNugget(description + ".initializeAvailableLocations()", () -> {
+            QueryPerformanceRecorder.withNugget(getDescription() + ".initializeAvailableLocations()", () -> {
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
@@ -153,7 +157,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending()) {
                         if (locationUpdate != null) {
-                            maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                         }
                     }
@@ -188,14 +191,26 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.get())));
     }
 
-    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys,
+            final boolean removedAllowed) {
         if (removedKeys.isEmpty()) {
             return;
         }
 
-        filterLocationKeys(removedKeys).stream()
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredSuppliers = filterLocationKeys(removedKeys);
+        if (filteredSuppliers.isEmpty()) {
+            return;
+        }
+
+        if (removedAllowed) {
+            filteredSuppliers.stream().map(LiveSupplier::get).forEach(columnSourceManager::removeLocationKey);
+            return;
+        }
+
+        final ImmutableTableLocationKey[] keys = filteredSuppliers.stream()
                 .map(LiveSupplier::get)
-                .forEach(columnSourceManager::removeLocationKey);
+                .toArray(ImmutableTableLocationKey[]::new);
+        throw new TableLocationRemovedException("Source table does not support removed locations", keys);
     }
 
     private void initializeLocationSizes() {
@@ -207,7 +222,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             if (locationSizesInitialized) {
                 return;
             }
-            QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
+            QueryPerformanceRecorder.withNugget(getDescription() + ".initializeLocationSizes()",
+                    sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
                         try {
@@ -229,7 +245,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(SourceTable.this.updateSourceRegistrar, SourceTable.this, description + ".rowSetUpdateSource");
+            super(SourceTable.this.updateSourceRegistrar, SourceTable.this, getDescription() + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
@@ -238,16 +254,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
                 if (locationUpdate != null) {
-                    if (!locationProvider.getUpdateMode().removeAllowed()
-                            && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
-                        // This TLP doesn't support removed locations, we need to throw an exception.
-                        final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
-                                .map(LiveSupplier::get).toArray(ImmutableTableLocationKey[]::new);
-                        throw new TableLocationRemovedException(
-                                "Source table does not support removed locations", keys);
-                    }
-
-                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys(),
+                            locationProvider.getUpdateMode().removeAllowed());
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 }
             }
@@ -350,5 +358,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 locationChangePoller.locationBuffer.reset();
             }
         }
+    }
+
+    @Override
+    @NotNull
+    public Stream<PerformanceEntry> sourceEntries() {
+        if (updateSourceRegistrar != null && locationsInitialized) {
+            final PerformanceEntry entry = locationChangePoller.getEntry();
+            if (entry != null) {
+                return Stream.of(entry);
+            }
+        }
+        return Stream.empty();
     }
 }

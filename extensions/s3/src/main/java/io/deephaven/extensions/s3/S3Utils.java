@@ -1,14 +1,18 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.profiles.ProfileFileLocation;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
+
+import static io.deephaven.extensions.s3.S3ClientFactory.RETRY_STRATEGY_MAX_ATTEMPTS;
 
 class S3Utils {
 
@@ -47,5 +51,16 @@ class S3Utils {
                 .type(type)
                 .content(path)
                 .build());
+    }
+
+    /**
+     * Helper function to add timeout to the builder.
+     *
+     * @param builder the {@link AwsRequestOverrideConfiguration.Builder} to add the timeout to
+     * @param timeout the timeout to add
+     */
+    static void addTimeout(AwsRequestOverrideConfiguration.Builder builder, final Duration timeout) {
+        builder.apiCallAttemptTimeout(timeout.dividedBy(RETRY_STRATEGY_MAX_ATTEMPTS))
+                .apiCallTimeout(timeout);
     }
 }

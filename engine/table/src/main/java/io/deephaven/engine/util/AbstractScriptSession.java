@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -47,18 +47,15 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         // TODO(deephaven-core#1713): Introduce instance-id concept
         final UUID scriptCacheId = UuidCreator.getRandomBased();
         final Path directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId));
-        createOrClearDirectory(directory);
+        ensureDirectory(directory);
         return directory;
     }
 
     public static void createScriptCache() {
-        createOrClearDirectory(CLASS_CACHE_LOCATION);
+        ensureDirectory(CLASS_CACHE_LOCATION);
     }
 
-    private static void createOrClearDirectory(final Path directory) {
-        if (Files.exists(directory)) {
-            FileUtils.deleteRecursively(directory.toFile());
-        }
+    private static void ensureDirectory(final Path directory) {
         try {
             Files.createDirectories(directory);
         } catch (IOException e) {
@@ -108,6 +105,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setUpdateGraph(updateGraph)
                 .setOperationInitializer(operationInitializer)
                 .build();
+    }
+
+    @Override
+    public void cleanup() {
+        FileUtils.deleteRecursively(classCacheDirectory);
     }
 
     @Override

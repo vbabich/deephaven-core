@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Supplier;
 
 public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         implements TableListener, NotificationQueue.Dependency {
@@ -60,12 +61,13 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     @SuppressWarnings("FieldMayBeFinal")
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
-    InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
+    InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener,
+            @Nullable Supplier<long[]> ancestors) {
         this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.description = StringUtils.isNullOrEmpty(description)
                 ? QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION
                 : description;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(updateGraph, description, ancestors);
         this.terminalListener = terminalListener;
     }
 
@@ -333,12 +335,15 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
-                final LogEntry en = log.error().append("Uncaught exception for entry= ");
+                final LogEntry en = log.error().append("Uncaught exception for entry ");
 
                 final boolean useVerboseLogging = verboseLogging;
                 if (useVerboseLogging) {
                     en.append(entry);
                 } else {
+                    if (entry != null) {
+                        en.append("id=").append(entry.getId()).append(" ");
+                    }
                     en.append(description);
                 }
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """
@@ -92,7 +92,7 @@ class PluginRequestStream:
         """
         Sends a message to the server, consisting of a payload of bytes and a list of objects that exist on the server.
         """
-        data_message = object_pb2.ClientData(payload=payload, references=[obj.pb_typed_ticket() for obj in references])
+        data_message = object_pb2.ClientData(payload=payload, references=[obj.pb_typed_ticket for obj in references])
         stream_req = object_pb2.StreamRequest(data=data_message)
         self.req_queue.put(stream_req)
 

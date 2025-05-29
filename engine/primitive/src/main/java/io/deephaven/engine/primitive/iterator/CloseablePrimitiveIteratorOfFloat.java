@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CloseablePrimitiveIteratorOfFloat and run "./gradlew replicatePrimitiveInterfaces" to regenerate
@@ -71,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfFloat extends CloseablePrimitiveIte
 
             @Override
             public double nextDouble() {
-                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.next());
+                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.nextFloat());
             }
 
             @Override

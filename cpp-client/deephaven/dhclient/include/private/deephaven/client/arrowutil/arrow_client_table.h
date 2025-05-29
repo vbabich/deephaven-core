@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 #include <string>
 #include <cstdint>
 #include <arrow/array.h>
 #include <arrow/table.h>
-#include "deephaven/client/arrowutil/arrow_value_converter.h"
 #include "deephaven/dhcore/chunk/chunk_traits.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/column/column_source_utils.h"

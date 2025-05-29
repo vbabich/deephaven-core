@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -18,7 +18,6 @@ public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> impleme
     ContextWithChunk(CONTEXT context, ChunkType chunkType, int chunkCapacity) {
         this.context = context;
         writableChunk = chunkType.makeWritableChunk(chunkCapacity);
-        writableChunk.setSize(chunkCapacity);
         resettableWritableChunk = chunkType.makeResettableWritableChunk();
     }
 
@@ -70,6 +69,8 @@ public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> impleme
     /**
      * Makes sure that the internal array (and hence the writableChunk) is at least the specified size.
      */
+    @SuppressWarnings("unused") // Used by Core+ in
+                                // io.deephaven.enterprise.sources.regioned.impl.ColumnRegionObjectCodecVariable
     public void ensureSize(final int length) {
         if (writableChunk.size() < length) {
             if (writableChunk.capacity() < length) {
